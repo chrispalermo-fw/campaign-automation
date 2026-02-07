@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Created Successfully</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .success-box {
+            background: #f0f9ff;
+            border: 2px solid #2ecc71;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .info-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .info-section h2 {
+            color: #333;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-section h2::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+        
+        .info-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-family: 'Monaco', 'Courier New', monospace;
+            word-break: break-all;
+        }
+        
+        .workflow-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .workflow-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .workflow-item strong {
+            color: #667eea;
+        }
+        
+        .next-steps {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .next-steps h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .next-steps ol {
+            margin-left: 20px;
+            color: #856404;
+        }
+        
+        .next-steps li {
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">✅</div>
+            <h1>Campaign Created Successfully!</h1>
+            <p>{{ result.campaign_name }}</p>
+        </div>
+        
+        <div class="content">
+            <div class="success-box">
+                <strong>🎉 Your campaign has been created in both HubSpot and Salesforce!</strong>
+                <p style="margin-top: 10px;">All segments, workflows, and campaign member statuses have been set up.</p>
+            </div>
+            
+            <!-- Campaign IDs -->
+            <div class="info-section">
+                <h2>Campaign IDs</h2>
+                <div class="info-item">
+                    <div class="info-label">HubSpot Campaign ID</div>
+                    <div class="info-value">{{ result.hubspot_campaign_id }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Salesforce Campaign ID</div>
+                    <div class="info-value">{{ result.salesforce_campaign_id }}</div>
+                </div>
+            </div>
+            
+            <!-- Created Lists -->
+            {% if result.hubspot_list_ids %}
+            <div class="info-section">
+                <h2>HubSpot Lists Created</h2>
+                <ul class="workflow-list">
+                    {% for list_id in result.hubspot_list_ids %}
+                    <li class="workflow-item">
+                        List ID: <strong>{{ list_id }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Created Workflows -->
+            {% if result.hubspot_workflows %}
+            <div class="info-section">
+                <h2>HubSpot Workflows Created</h2>
+                <ul class="workflow-list">
+                    {% for workflow in result.hubspot_workflows %}
+                    <li class="workflow-item">
+                        <strong>{{ workflow.name }}</strong><br>
+                        Workflow ID: {{ workflow.id }}<br>
+                        List ID: {{ workflow.list_id }} → Status: {{ workflow.status }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>⚠️ Important Next Steps</h3>
+                <ol>
+                    <li><strong>Configure Workflow Enrollment Triggers:</strong>
+                        <ul style="margin-top: 5px; margin-left: 20px;">
+                            <li>Go to HubSpot → Automation → Workflows</li>
+                            <li>For each workflow, add enrollment trigger: "Contact is added to list"</li>
+                            <li>Select the corresponding list ID</li>
+                        </ul>
+                    </li>
+                    <li><strong>Add "Set Salesforce Campaign" Action:</strong>
+                        <ul style="margin-top: 5px; margin-left: 20px;">
+                            <li>In each workflow's Actions tab, delete the placeholder action</li>
+                            <li>Add action: "Set Salesforce Campaign"</li>
+                            <li>Set Campaign: {{ result.salesforce_campaign_id }}</li>
+                            <li>Set Status: Match the workflow's status (Waitlist, Attended, etc.)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Activate Workflows:</strong>
+                        <ul style="margin-top: 5px; margin-left: 20px;">
+                            <li>Activate each workflow after configuration</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p style="margin-top: 15px; font-size: 0.9em;">
+                    See <code>CONFIGURE_WORKFLOWS.md</code> for detailed instructions.
+                </p>
+            </div>
+            
+            <a href="/" class="btn">Create Another Campaign</a>
+        </div>
+    </div>
+</body>
+</html>

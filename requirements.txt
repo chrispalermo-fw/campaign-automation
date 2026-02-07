@@ -1,0 +1,9 @@
+# Campaign automation: HubSpot + Salesforce
+requests>=2.31.0
+PyYAML>=6.0.1
+python-dotenv>=1.0.0
+# Salesforce auth (simple-salesforce for REST)
+simple-salesforce>=1.12.0
+# Web application
+Flask>=3.0.0
+gunicorn>=21.2.0

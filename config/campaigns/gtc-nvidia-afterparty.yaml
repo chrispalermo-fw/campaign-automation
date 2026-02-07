@@ -1,0 +1,74 @@
+# GTC Nvidia Afterparty Campaign
+# Campaign Name: 1PEvent_ GTC Nvidia Afterparty_San Jose_03162026
+# Parent campaign: GTV Nvidia 3/6/2026
+
+name: "1PEvent_ GTC Nvidia Afterparty_San Jose_03162026"
+
+# Dates (YYYY-MM-DD format)
+start_date: "2026-03-16"
+end_date: "2026-03-16"
+
+# --- Taxonomy ---
+taxonomy:
+  hubspot:
+    # Add any HubSpot campaign properties here if needed
+    # Example: campaign_type: "1PEvent"
+  salesforce:
+    Type: "Event"
+    # Attribution Source - adjust field name if it's custom (e.g., Attribution_Source__c)
+    # If standard field exists, uncomment and set the field name:
+    # AttributionSource: "Marketing"
+
+# --- HubSpot: Create segments for each member status ---
+hubspot:
+  # Automatically create segments for these member statuses
+  auto_create_segments:
+    - "Registered"
+    - "Waitlist"
+    - "Attended"
+    - "No Show"
+  # Manually provide list IDs (found from previous runs or HubSpot UI)
+  list_ids:
+    - 828   # Waitlist
+    - 829   # Attended
+    - 830   # No Show
+    # TODO: Add Registered list ID - find it in HubSpot UI (see FIND_LIST_IDS.md)
+    # - XXX   # Registered
+  
+  # Map list IDs to status names
+  list_status_map:
+    "828": "Waitlist"
+    "829": "Attended"
+    "830": "No Show"
+    # TODO: Add Registered mapping once you have the ID
+    # "XXX": "Registered"
+  # Create workflows to sync list enrollments to Salesforce (default: true)
+  create_workflows: true
+  extra_properties:
+    hs_notes: "Automated via campaign-automation. Syncs to Salesforce."
+
+# --- Salesforce: campaign setup ---
+salesforce:
+  status: "Planned"
+  description: "GTC Nvidia Afterparty event in San Jose"
+  # Parent campaign name (will be looked up by name)
+  parent_campaign: "GTV Nvidia 3/6/2026"
+  # Campaign member statuses to create (if not provided, uses hubspot.auto_create_segments)
+  member_statuses:
+    - "Registered"
+    - "Waitlist"
+    - "Attended"
+    - "No Show"
+  custom_fields:
+    # Add Attribution Source here if it's a custom field
+    # Attribution_Source__c: "Marketing"
+    # Or add to taxonomy.salesforce if it's a standard field
+
+# --- Workflows to enable after campaigns are created ---
+workflows:
+  # Wait time (in minutes) before syncing to Salesforce (default: 10)
+  wait_minutes: 10
+  # Zapier webhook URL for Salesforce sync (if using webhook-based sync)
+  # The webhook should receive: contact_id, contact_email, salesforce_campaign_id, salesforce_status
+  zapier_webhook_url: null   # Set this if you have a Zapier webhook to trigger
+  # Or use env variable: ZAPIER_CAMPAIGN_CREATED_WEBHOOK

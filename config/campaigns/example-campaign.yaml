@@ -1,0 +1,60 @@
+# Campaign definition: single source of truth for HubSpot + Salesforce
+# Copy this file and fill in your campaign details, then run: python -m src.run_campaign path/to/this-file.yaml
+
+name: "Q1 2025 - Webinar Series - AI for DevTools"
+# Optional: use a slug for internal reference (defaults to name lowercased + sanitized)
+# slug: q1-2025-webinar-ai-devtools
+
+# Dates (YYYY-MM-DD). Used in both systems where applicable.
+start_date: "2025-02-01"
+end_date: "2025-03-31"
+
+# --- Taxonomy & tags (map to your custom properties in each system) ---
+taxonomy:
+  # HubSpot: set these as campaign properties (create in Settings > Properties if needed)
+  hubspot:
+    channel: "Webinar"
+    campaign_type: "Demand Gen"
+    region: "North America"
+    # Add any custom property internal names, e.g.:
+    # hs_custom_tier: "Tier 1"
+  # Salesforce: map to Campaign standard/custom fields
+  salesforce:
+    Type: "Webinar"
+    # Custom fields use __c suffix, e.g. Region__c: "North America"
+    # Region__c: "North America"
+
+tags:
+  - "webinar"
+  - "ai"
+  - "devtools"
+
+# --- HubSpot: lists and segments to associate with this campaign ---
+# List IDs from HubSpot: Marketing > Lead Management > Lists, open list, ID in URL or via API
+hubspot:
+  list_ids: []   # e.g. [12345678, 87654321]
+  # Optional: segment IDs if you use segments (ILS list IDs)
+  # segment_list_ids: []
+  # Extra campaign properties not in taxonomy (e.g. hs_notes, hs_audience)
+  extra_properties:
+    hs_notes: "Automated via campaign-automation. Syncs to Salesforce."
+    hs_campaign_status: "planned"
+
+# --- Salesforce: campaign setup ---
+salesforce:
+  # Standard Campaign fields: Name, Type (from taxonomy), Status, etc.
+  status: "Planned"
+  # Optional: Description, BudgetedCost, ActualCost, etc.
+  description: "Webinar series - AI for DevTools. Synced from HubSpot."
+  # Optional: add custom field values
+  # custom_fields: {}
+
+# --- Workflows to enable after campaigns are created ---
+# Use this to trigger Zaps or enable HubSpot workflows that move data between systems.
+workflows:
+  # Zapier: trigger URL or Zap ID to turn on (document in README how you call Zapier)
+  zapier_webhook_url: null   # e.g. "https://hooks.zapier.com/..."
+  # Or list of Zap IDs if you use Zapier API to turn on Zaps
+  # zap_ids_to_enable: []
+  # HubSpot workflow IDs to enroll or activate (if applicable)
+  # hubspot_workflow_ids: []

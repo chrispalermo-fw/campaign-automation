@@ -1,0 +1,40 @@
+# Python
+.venv/
+venv/
+env/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Logs
+*.log
+ngrok.log
+
+# Temporary files
+*.tmp
+*.temp
+ngrok.zip
+ngrok
+
+# Test files (optional - uncomment if you don't want test files)
+# test_*.py

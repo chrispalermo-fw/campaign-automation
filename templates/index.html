@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Automation Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .form-section:last-child {
+            border-bottom: none;
+        }
+        
+        .form-section h2 {
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-section h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: #667eea;
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        
+        .help-text {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .member-statuses-input {
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+        
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+        
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Campaign Automation Tool</h1>
+            <p>Create campaigns in HubSpot & Salesforce with automated workflows</p>
+        </div>
+        
+        <div class="form-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="/create">
+                <!-- Campaign Basics -->
+                <div class="form-section">
+                    <h2>Campaign Basics</h2>
+                    
+                    <div class="form-group">
+                        <label for="campaign_name">
+                            Campaign Name <span class="required">*</span>
+                        </label>
+                        <input type="text" id="campaign_name" name="campaign_name" 
+                               placeholder="e.g., 1PEvent_GTC Nvidia Afterparty_San Jose_03162026" 
+                               required>
+                        <div class="help-text">Format: Type_name_Location_Date</div>
+                    </div>
+                    
+                    <div class="two-columns">
+                        <div class="form-group">
+                            <label for="start_date">
+                                Start Date <span class="required">*</span>
+                            </label>
+                            <input type="date" id="start_date" name="start_date" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="end_date">
+                                End Date <span class="required">*</span>
+                            </label>
+                            <input type="date" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Member Statuses -->
+                <div class="form-section">
+                    <h2>Member Statuses</h2>
+                    
+                    <div class="form-group">
+                        <label for="member_statuses">
+                            Member Statuses <span class="required">*</span>
+                        </label>
+                        <textarea id="member_statuses" name="member_statuses" 
+                                  class="member-statuses-input" 
+                                  placeholder="Registered&#10;Waitlist&#10;Attended&#10;No Show" 
+                                  required></textarea>
+                        <div class="help-text">Enter one status per line. These will create segments in HubSpot and statuses in Salesforce.</div>
+                    </div>
+                </div>
+                
+                <!-- HubSpot Configuration -->
+                <div class="form-section">
+                    <h2>HubSpot Configuration</h2>
+                    
+                    <div class="form-group">
+                        <label for="hubspot_notes">Campaign Notes (Optional)</label>
+                        <textarea id="hubspot_notes" name="hubspot_notes" 
+                                  placeholder="Additional notes for the HubSpot campaign"></textarea>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="create_workflows" name="create_workflows" value="true" checked>
+                        <label for="create_workflows">Create workflows to sync list enrollments to Salesforce</label>
+                    </div>
+                </div>
+                
+                <!-- Salesforce Configuration -->
+                <div class="form-section">
+                    <h2>Salesforce Configuration</h2>
+                    
+                    <div class="form-group">
+                        <label for="salesforce_status">Campaign Status</label>
+                        <select id="salesforce_status" name="salesforce_status">
+                            <option value="Planned" selected>Planned</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="salesforce_description">Campaign Description</label>
+                        <textarea id="salesforce_description" name="salesforce_description" 
+                                  placeholder="Description of the campaign"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="salesforce_type">Campaign Type</label>
+                        <input type="text" id="salesforce_type" name="salesforce_type" 
+                               placeholder="e.g., Event, Webinar, Email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="parent_campaign">Parent Campaign Name (Optional)</label>
+                        <input type="text" id="parent_campaign" name="parent_campaign" 
+                               placeholder="Name of parent campaign if this is a child campaign">
+                        <div class="help-text">Will be looked up by name in Salesforce</div>
+                    </div>
+                </div>
+                
+                <!-- Workflow Configuration -->
+                <div class="form-section">
+                    <h2>Workflow Configuration</h2>
+                    
+                    <div class="form-group">
+                        <label for="wait_minutes">Wait Time Before Sync (minutes)</label>
+                        <input type="number" id="wait_minutes" name="wait_minutes" 
+                               value="10" min="1" max="1440">
+                        <div class="help-text">How long to wait after list enrollment before syncing to Salesforce</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="webhook_url">Webhook URL (Optional)</label>
+                        <input type="text" id="webhook_url" name="webhook_url" 
+                               placeholder="https://hooks.zapier.com/...">
+                        <div class="help-text">If using Zapier or custom webhook for Salesforce sync</div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    🚀 Create Campaign
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
