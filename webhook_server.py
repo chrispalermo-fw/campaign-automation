@@ -25,10 +25,17 @@ def hubspot_form_to_config(form_data):
     # Extract form fields (HubSpot may send as form_data or nested)
     if isinstance(form_data, dict):
         # Direct field access
+        # Support both naming conventions: campaign_* and standard names
         campaign_name = form_data.get("campaign_name") or form_data.get("campaignname")
-        start_date = form_data.get("start_date") or form_data.get("startdate")
-        end_date = form_data.get("end_date") or form_data.get("enddate")
-        member_statuses_raw = form_data.get("member_statuses") or form_data.get("memberstatuses") or ""
+        start_date = (form_data.get("campaign_start_date") or 
+                     form_data.get("start_date") or 
+                     form_data.get("startdate"))
+        end_date = (form_data.get("campaign_end_date") or 
+                   form_data.get("end_date") or 
+                   form_data.get("enddate"))
+        member_statuses_raw = (form_data.get("campaign_member_statuses") or 
+                              form_data.get("member_statuses") or 
+                              form_data.get("memberstatuses") or "")
         salesforce_status = form_data.get("salesforce_status") or form_data.get("salesforcestatus") or "Planned"
         salesforce_description = form_data.get("salesforce_description") or form_data.get("salesforcedescription") or ""
         salesforce_type = form_data.get("salesforce_type") or form_data.get("salesforcetype") or ""
@@ -38,10 +45,17 @@ def hubspot_form_to_config(form_data):
         webhook_url = form_data.get("webhook_url") or form_data.get("webhookurl") or ""
     else:
         # Handle as form data object
+        # Support both naming conventions: campaign_* and standard names
         campaign_name = getattr(form_data, "campaign_name", None) or getattr(form_data, "campaignname", None)
-        start_date = getattr(form_data, "start_date", None) or getattr(form_data, "startdate", None)
-        end_date = getattr(form_data, "end_date", None) or getattr(form_data, "enddate", None)
-        member_statuses_raw = getattr(form_data, "member_statuses", None) or getattr(form_data, "memberstatuses", None) or ""
+        start_date = (getattr(form_data, "campaign_start_date", None) or 
+                     getattr(form_data, "start_date", None) or 
+                     getattr(form_data, "startdate", None))
+        end_date = (getattr(form_data, "campaign_end_date", None) or 
+                   getattr(form_data, "end_date", None) or 
+                   getattr(form_data, "enddate", None))
+        member_statuses_raw = (getattr(form_data, "campaign_member_statuses", None) or 
+                               getattr(form_data, "member_statuses", None) or 
+                               getattr(form_data, "memberstatuses", None) or "")
         salesforce_status = getattr(form_data, "salesforce_status", None) or getattr(form_data, "salesforcestatus", None) or "Planned"
         salesforce_description = getattr(form_data, "salesforce_description", None) or getattr(form_data, "salesforcedescription", None) or ""
         salesforce_type = getattr(form_data, "salesforce_type", None) or getattr(form_data, "salesforcetype", None) or ""
@@ -56,7 +70,7 @@ def hubspot_form_to_config(form_data):
     end_date = (end_date or "").strip()
     
     if not campaign_name or not start_date or not end_date:
-        raise ValueError("Missing required fields: campaign_name, start_date, end_date")
+        raise ValueError("Missing required fields: campaign_name, campaign_start_date (or start_date), campaign_end_date (or end_date)")
     
     # Parse member statuses (handle newlines, commas, or semicolons)
     member_statuses = []
@@ -66,7 +80,7 @@ def hubspot_form_to_config(form_data):
         member_statuses = [s.strip() for s in cleaned.split("\n") if s.strip()]
     
     if not member_statuses:
-        raise ValueError("Missing required field: member_statuses")
+        raise ValueError("Missing required field: campaign_member_statuses (or member_statuses)")
     
     # Build config
     config = {
