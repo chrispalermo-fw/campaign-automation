@@ -16,6 +16,10 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Add CORS support
+from flask_cors import CORS
+CORS(app)
+
 
 def hubspot_form_to_config(form_data):
     """Convert HubSpot form submission data to campaign config dictionary."""
