@@ -198,15 +198,15 @@ def run(config_path: Union[str, Path]) -> dict:
             if list_id:
                 workflow_name = list_name  # Same name as segment
                 try:
-                workflow = hs.create_workflow_with_enrollment(
-                    workflow_name=workflow_name,
-                    list_id=list_id,
-                    salesforce_campaign_id=salesforce_id,
-                    salesforce_status=status,
-                    wait_minutes=wait_minutes,
-                    webhook_url=workflow_webhook_url,
-                    salesforce_campaign_name=name,
-                )
+                    workflow = hs.create_workflow_with_enrollment(
+                        workflow_name=workflow_name,
+                        list_id=list_id,
+                        salesforce_campaign_id=salesforce_id,
+                        salesforce_status=status,
+                        wait_minutes=wait_minutes,
+                        webhook_url=workflow_webhook_url,
+                        salesforce_campaign_name=name,
+                    )
                     created_workflows.append({
                         "name": workflow_name,
                         "id": workflow.get("id"),
