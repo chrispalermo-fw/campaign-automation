@@ -19,13 +19,7 @@ logger = logging.getLogger(__name__)
 # Add CORS support - Allow all origins for webhook (HubSpot domains)
 from flask_cors import CORS
 # Allow all origins for webhook endpoints to support HubSpot landing pages
-CORS(app, resources={
-    r"/webhook/*": {
-        "origins": "*",  # Allow all origins for webhook
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
-    }
-})
+CORS(app, origins="*", methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type", "Authorization", "X-Requested-With"])
 
 
 def hubspot_form_to_config(form_data):
