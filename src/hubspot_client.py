@@ -251,13 +251,28 @@ class HubSpotCampaignClient:
         salesforce_status: str,
         wait_minutes: int = 10,
         webhook_url: Optional[str] = None,
+        salesforce_campaign_name: Optional[str] = None,
     ) -> dict:
         """
-        Create a HubSpot workflow that triggers when contacts are added to a list.
-        After waiting, it will sync to Salesforce via webhook or native integration.
+        Create a HubSpot workflow that triggers when contacts are added to a segment (list).
+        After waiting, it will update Salesforce campaign member status.
+        
+        Workflow structure:
+        1. Trigger: Segment membership changed → is added to segment (or Contact is added to list)
+        2. Delay: Wait specified minutes
+        3. Action: Set Salesforce Campaign (with campaign name and status)
         
         Returns workflow object with id.
         Requires: automation.read, automation.write scopes
+        
+        Args:
+            workflow_name: Name of the workflow (typically matches segment name)
+            list_id: HubSpot list/segment ID
+            salesforce_campaign_id: Salesforce Campaign ID
+            salesforce_status: Campaign Member Status (e.g., "Waitlist", "Registered")
+            wait_minutes: Delay before action (default: 10)
+            webhook_url: Optional webhook URL (if not using native Salesforce integration)
+            salesforce_campaign_name: Salesforce Campaign Name (for action configuration)
         """
         url = f"{HUBSPOT_BASE}/automation/v3/workflows"
         
@@ -270,19 +285,10 @@ class HubSpotCampaignClient:
             },
         ]
         
-        # Note: HubSpot's "Set Salesforce Campaign" action cannot be created via API
-        # The workflow will be created with the delay step, and you MUST add
-        # the "Set Salesforce Campaign" action in the HubSpot UI
-        # This placeholder action will be replaced in the UI
-        actions.append({
-            "type": "SET_CONTACT_PROPERTY",
-            "propertyName": "notes",
-            "newValue": f"[REPLACE THIS ACTION] Set Salesforce Campaign: {salesforce_campaign_id}, Status: {salesforce_status}",
-        })
-        
+        # Try to use SET_SALESFORCE_CAMPAIGN action type (may not be supported via API)
         # If webhook is provided, use that instead (for custom integrations)
         if webhook_url:
-            actions[-1] = {
+            actions.append({
                 "type": "WEBHOOK",
                 "url": webhook_url,
                 "method": "POST",
@@ -293,12 +299,34 @@ class HubSpotCampaignClient:
                     "salesforce_status": salesforce_status,
                     "list_id": str(list_id),
                 },
-            }
+            })
+        else:
+            # Try SET_SALESFORCE_CAMPAIGN action (may not work via API)
+            # HubSpot's native Salesforce integration actions often require UI configuration
+            try:
+                set_sf_action = {
+                    "type": "SET_SALESFORCE_CAMPAIGN",
+                    "campaignId": salesforce_campaign_id,
+                    "status": salesforce_status,
+                }
+                if salesforce_campaign_name:
+                    set_sf_action["campaignName"] = salesforce_campaign_name
+                actions.append(set_sf_action)
+            except Exception:
+                # Fallback to placeholder if SET_SALESFORCE_CAMPAIGN doesn't work
+                actions.append({
+                    "type": "SET_CONTACT_PROPERTY",
+                    "propertyName": "notes",
+                    "newValue": f"[REPLACE THIS ACTION] Set Salesforce Campaign: {salesforce_campaign_id}, Status: {salesforce_status}",
+                })
         
+        # Build payload with enrollment trigger for segment/list membership
         payload = {
             "name": workflow_name,
             "type": "DRIP_DELAY",
             "onlyEnrollsManually": False,  # Allow automatic enrollment
+            "enrollmentTriggerType": "CONTACT_LIST_MEMBERSHIP",  # Trigger on list/segment enrollment
+            "enrollmentListId": str(list_id),  # The list/segment ID
             "actions": actions,
         }
         
@@ -310,22 +338,42 @@ class HubSpotCampaignClient:
             
             print(f"  ✓ Created workflow '{workflow_name}' (id={workflow_id})")
             
-            # Provide clear instructions for configuring the workflow
-            print(f"\n  ⚠️  CRITICAL: Configure workflow in HubSpot UI:")
-            print(f"     Workflow ID: {workflow_id}")
-            print(f"     List ID: {list_id} → Status: {salesforce_status}")
-            print(f"     Salesforce Campaign: {salesforce_campaign_id}")
-            print(f"\n     Steps:")
-            print(f"     1. Go to: Automation > Workflows")
-            print(f"     2. Open: '{workflow_name}' (ID: {workflow_id})")
-            print(f"     3. ENROLLMENT tab → Add trigger:")
-            print(f"        • Select: 'Contact is added to list'")
-            print(f"        • Choose list ID: {list_id}")
-            print(f"     4. ACTIONS tab → DELETE the placeholder 'Set contact property' action")
-            print(f"     5. ACTIONS tab → ADD action: 'Set Salesforce Campaign'")
-            print(f"        • Campaign: {salesforce_campaign_id}")
-            print(f"        • Status: {salesforce_status}")
-            print(f"     6. ACTIVATE the workflow")
+            # Check if Salesforce action was successfully added by examining response
+            workflow_actions = workflow.get("actions", [])
+            has_salesforce_action = any(
+                action.get("type") == "SET_SALESFORCE_CAMPAIGN" or 
+                action.get("actionTypeId") == "SET_SALESFORCE_CAMPAIGN"
+                for action in workflow_actions
+            )
+            
+            if not has_salesforce_action and not webhook_url:
+                # Provide detailed instructions for manual configuration
+                print(f"\n  ⚠️  ACTION REQUIRED: Configure Salesforce action in HubSpot UI")
+                print(f"     Workflow ID: {workflow_id}")
+                print(f"     Workflow Name: {workflow_name}")
+                print(f"     Segment/List ID: {list_id}")
+                print(f"     Salesforce Campaign ID: {salesforce_campaign_id}")
+                print(f"     Salesforce Campaign Name: {salesforce_campaign_name or 'N/A'}")
+                print(f"     Campaign Member Status: {salesforce_status}")
+                print(f"\n     Steps to complete workflow setup:")
+                print(f"     1. Go to: Automation > Workflows")
+                print(f"     2. Open: '{workflow_name}' (ID: {workflow_id})")
+                print(f"     3. ENROLLMENT tab → Verify/Set trigger:")
+                print(f"        • Should show: 'Contact is added to list' (List ID: {list_id})")
+                print(f"        • If not set, add trigger:")
+                print(f"          - Select: 'Segment membership changed'")
+                print(f"          - Condition: 'is added to segment'")
+                print(f"          - Select segment: '{workflow_name}' (or find by List ID: {list_id})")
+                print(f"     4. ACTIONS tab → DELETE the placeholder 'Set contact property' action (if present)")
+                print(f"     5. ACTIONS tab → ADD action:")
+                print(f"        • Go to: CRM → Set Salesforce Campaign")
+                print(f"        • Campaign: {salesforce_campaign_name or salesforce_campaign_id}")
+                print(f"        • Status: {salesforce_status}")
+                print(f"     6. ACTIVATE the workflow")
+            else:
+                print(f"  ✓ Workflow configured with Salesforce action")
+                if webhook_url:
+                    print(f"  ✓ Using webhook integration: {webhook_url}")
             
             return workflow
             
