@@ -301,19 +301,20 @@ class HubSpotCampaignClient:
                 },
             })
         else:
-            # Try SET_SALESFORCE_CAMPAIGN action (may not work via API)
-            # HubSpot's native Salesforce integration actions often require UI configuration
+            # Try SET_SALESFORCE_CAMPAIGN_MEMBERSHIP action (correct API action type)
+            # Note: HubSpot API uses SET_SALESFORCE_CAMPAIGN_MEMBERSHIP, not SET_SALESFORCE_CAMPAIGN
             try:
                 set_sf_action = {
-                    "type": "SET_SALESFORCE_CAMPAIGN",
+                    "type": "SET_SALESFORCE_CAMPAIGN_MEMBERSHIP",
                     "campaignId": salesforce_campaign_id,
                     "status": salesforce_status,
                 }
                 if salesforce_campaign_name:
                     set_sf_action["campaignName"] = salesforce_campaign_name
                 actions.append(set_sf_action)
-            except Exception:
-                # Fallback to placeholder if SET_SALESFORCE_CAMPAIGN doesn't work
+            except Exception as e:
+                print(f"  ⚠️  Could not create SET_SALESFORCE_CAMPAIGN_MEMBERSHIP action: {e}")
+                # Fallback to placeholder if SET_SALESFORCE_CAMPAIGN_MEMBERSHIP doesn't work
                 actions.append({
                     "type": "SET_CONTACT_PROPERTY",
                     "propertyName": "notes",
@@ -332,6 +333,13 @@ class HubSpotCampaignClient:
         
         try:
             r = self._session.post(url, json=payload)
+            if r.status_code != 200 and r.status_code != 201:
+                error_text = r.text
+                try:
+                    error_json = r.json()
+                    print(f"  ❌ HubSpot API Error ({r.status_code}): {error_json}")
+                except:
+                    print(f"  ❌ HubSpot API Error ({r.status_code}): {error_text}")
             r.raise_for_status()
             workflow = r.json()
             workflow_id = workflow.get("id")
@@ -341,6 +349,8 @@ class HubSpotCampaignClient:
             # Check if Salesforce action was successfully added by examining response
             workflow_actions = workflow.get("actions", [])
             has_salesforce_action = any(
+                action.get("type") == "SET_SALESFORCE_CAMPAIGN_MEMBERSHIP" or 
+                action.get("actionTypeId") == "SET_SALESFORCE_CAMPAIGN_MEMBERSHIP" or
                 action.get("type") == "SET_SALESFORCE_CAMPAIGN" or 
                 action.get("actionTypeId") == "SET_SALESFORCE_CAMPAIGN"
                 for action in workflow_actions
