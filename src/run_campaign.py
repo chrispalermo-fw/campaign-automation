@@ -119,13 +119,36 @@ def run(config_path: Union[str, Path]) -> dict:
                 # Check if this asset matches any of our expected list names
                 for status in member_statuses:
                     expected_name = f"{name} - {status}"
-                    if asset_name == expected_name and asset_id not in created_list_ids:
-                        created_list_ids.append(asset_id)
-                        list_status_map[asset_id] = status
-                        print(f"  ✓ Found and mapped existing list '{asset_name}' (id={asset_id})")
+                    if asset_name == expected_name:
+                        # Add to created_list_ids if not already there
+                        if asset_id not in created_list_ids:
+                            created_list_ids.append(asset_id)
+                        # Map to status if not already mapped
+                        if asset_id not in list_status_map:
+                            list_status_map[asset_id] = status
+                            print(f"  ✓ Found and mapped existing list '{asset_name}' (id={asset_id})")
         except Exception as e:
             # Assets endpoint might not be available or might fail
-            pass
+            print(f"  ⚠️  Could not check campaign assets: {e}")
+    
+    # Final fallback: Try to map any unmapped list IDs by searching for their names
+    if member_statuses and created_list_ids:
+        unmapped_ids = [lid for lid in created_list_ids if lid not in list_status_map]
+        if unmapped_ids:
+            print(f"  🔍 Found {len(unmapped_ids)} unmapped list IDs, attempting to map by name...")
+            for list_id in unmapped_ids:
+                # Try to get list details to find its name
+                try:
+                    # Search all lists to find this one
+                    for status in member_statuses:
+                        list_name = f"{name} - {status}"
+                        found_id = hs.find_list_by_name(list_name)
+                        if found_id == list_id:
+                            list_status_map[list_id] = status
+                            print(f"  ✓ Mapped list ID {list_id} to status '{status}'")
+                            break
+                except Exception as e:
+                    print(f"  ⚠️  Could not map list ID {list_id}: {e}")
 
     # --- Salesforce ---
     sf = get_salesforce()
@@ -178,6 +201,20 @@ def run(config_path: Union[str, Path]) -> dict:
         print(f"\nCreating HubSpot workflows to sync list enrollments to Salesforce...")
         print(f"  List status map: {list_status_map}")
         print(f"  Created list IDs: {created_list_ids}")
+        print(f"  Member statuses: {member_statuses}")
+        
+        # Final attempt: Match unmapped list IDs to statuses by checking list names
+        unmapped_ids = [lid for lid in created_list_ids if lid not in list_status_map]
+        if unmapped_ids:
+            print(f"  🔍 Found {len(unmapped_ids)} unmapped list IDs, attempting to map by name...")
+            for list_id in unmapped_ids:
+                for status in member_statuses:
+                    list_name = f"{name} - {status}"
+                    found_id = hs.find_list_by_name(list_name)
+                    if found_id == list_id or found_id == str(list_id):
+                        list_status_map[list_id] = status
+                        print(f"  ✓ Mapped list ID {list_id} to status '{status}' via name search")
+                        break
         
         for status in member_statuses:
             # Find the list ID for this status
