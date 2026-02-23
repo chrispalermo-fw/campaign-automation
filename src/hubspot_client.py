@@ -258,9 +258,12 @@ class HubSpotCampaignClient:
         After waiting, it will update Salesforce campaign member status.
         
         Workflow structure:
-        1. Trigger: Segment membership changed → is added to segment (or Contact is added to list)
+        1. Trigger: Contact is added to list (created via API)
+           NOTE: HubSpot API v3 limitation - cannot set "Segment membership changed" trigger programmatically.
+           The workflow will be created with "Contact is added to list" trigger.
+           User must manually change it to "Segment membership changed" → "is added to segment" in HubSpot UI.
         2. Delay: Wait specified minutes
-        3. Action: Set Salesforce Campaign (with campaign name and status)
+        3. Action: Set Salesforce Campaign Membership (with campaign name and status)
         
         Returns workflow object with id.
         Requires: automation.read, automation.write scopes
@@ -321,13 +324,15 @@ class HubSpotCampaignClient:
                     "newValue": f"[REPLACE THIS ACTION] Set Salesforce Campaign: {salesforce_campaign_id}, Status: {salesforce_status}",
                 })
         
-        # Build payload with enrollment trigger for segment/list membership
+        # Build payload - HubSpot API v3 limitation:
+        # The API does NOT support setting enrollment triggers programmatically.
+        # enrollmentTriggerType/enrollmentListId are ignored in POST requests.
+        # segmentCriteria doesn't work for list-based enrollment either.
+        # The workflow will be created with "Manually triggered only" and MUST be configured in UI.
         payload = {
             "name": workflow_name,
             "type": "DRIP_DELAY",
-            "onlyEnrollsManually": False,  # Allow automatic enrollment
-            "enrollmentTriggerType": "CONTACT_LIST_MEMBERSHIP",  # Trigger on list/segment enrollment
-            "enrollmentListId": str(list_id),  # The list/segment ID
+            "onlyEnrollsManually": False,  # This allows automatic enrollment once trigger is set in UI
             "actions": actions,
         }
         
@@ -356,34 +361,33 @@ class HubSpotCampaignClient:
                 for action in workflow_actions
             )
             
-            if not has_salesforce_action and not webhook_url:
-                # Provide detailed instructions for manual configuration
-                print(f"\n  ⚠️  ACTION REQUIRED: Configure Salesforce action in HubSpot UI")
-                print(f"     Workflow ID: {workflow_id}")
-                print(f"     Workflow Name: {workflow_name}")
-                print(f"     Segment/List ID: {list_id}")
-                print(f"     Salesforce Campaign ID: {salesforce_campaign_id}")
-                print(f"     Salesforce Campaign Name: {salesforce_campaign_name or 'N/A'}")
-                print(f"     Campaign Member Status: {salesforce_status}")
-                print(f"\n     Steps to complete workflow setup:")
-                print(f"     1. Go to: Automation > Workflows")
-                print(f"     2. Open: '{workflow_name}' (ID: {workflow_id})")
-                print(f"     3. ENROLLMENT tab → Verify/Set trigger:")
-                print(f"        • Should show: 'Contact is added to list' (List ID: {list_id})")
-                print(f"        • If not set, add trigger:")
-                print(f"          - Select: 'Segment membership changed'")
-                print(f"          - Condition: 'is added to segment'")
-                print(f"          - Select segment: '{workflow_name}' (or find by List ID: {list_id})")
-                print(f"     4. ACTIONS tab → DELETE the placeholder 'Set contact property' action (if present)")
-                print(f"     5. ACTIONS tab → ADD action:")
-                print(f"        • Go to: CRM → Set Salesforce Campaign")
-                print(f"        • Campaign: {salesforce_campaign_name or salesforce_campaign_id}")
-                print(f"        • Status: {salesforce_status}")
-                print(f"     6. ACTIVATE the workflow")
+            # CRITICAL: HubSpot API v3 does NOT support setting enrollment triggers programmatically
+            # The workflow is created with "Manually triggered only" and MUST be configured in UI
+            print(f"\n  ⚠️  CRITICAL: Set Enrollment Trigger in HubSpot UI (Required)")
+            print(f"     Workflow ID: {workflow_id}")
+            print(f"     Workflow Name: {workflow_name}")
+            print(f"     Segment/List ID: {list_id}")
+            print(f"     Salesforce Campaign ID: {salesforce_campaign_id}")
+            print(f"     Salesforce Campaign Name: {salesforce_campaign_name or 'N/A'}")
+            print(f"     Campaign Member Status: {salesforce_status}")
+            print(f"\n     Steps to complete workflow setup:")
+            print(f"     1. Go to: Automation > Workflows")
+            print(f"     2. Open: '{workflow_name}' (ID: {workflow_id})")
+            print(f"     3. ENROLLMENT tab → Click 'Add enrollment trigger'")
+            print(f"     4. Select: 'Segment membership changed'")
+            print(f"     5. Condition: 'is added to segment'")
+            print(f"     6. Select segment: '{workflow_name}' (or search for List ID: {list_id})")
+            print(f"     7. Click 'Save'")
+            print(f"     8. ACTIONS tab → Verify Salesforce action:")
+            if not has_salesforce_action:
+                print(f"        • DELETE the placeholder 'Set contact property' action (if present)")
+                print(f"        • ADD action:")
+                print(f"          - Go to: CRM → Set Salesforce Campaign")
+                print(f"          - Campaign: {salesforce_campaign_name or salesforce_campaign_id}")
+                print(f"          - Status: {salesforce_status}")
             else:
-                print(f"  ✓ Workflow configured with Salesforce action")
-                if webhook_url:
-                    print(f"  ✓ Using webhook integration: {webhook_url}")
+                print(f"        • Salesforce action is already configured ✅")
+            print(f"     9. ACTIVATE the workflow")
             
             return workflow
             

@@ -1,93 +1,232 @@
-# Campaign Automation: HubSpot → Salesforce
+# Campaign Automation
 
-Create campaigns in **HubSpot** and **Salesforce** from a single YAML config. Use the same definition to set campaign name, taxonomy, tags, list/segment associations, and to trigger workflows (e.g. Zapier) that move data between the two systems.
+Automation workflows for managing campaigns across HubSpot and Salesforce.
 
-## What it does
+## Overview
 
-1. **Creates the campaign name in both systems** – One config field, two campaigns (HubSpot + Salesforce).
-2. **Applies taxonomy & tags** – Map to your custom properties in each system via `taxonomy.hubspot` and `taxonomy.salesforce`.
-3. **Adds lists/segments in HubSpot** – Associates static lists (and optionally segments) with the HubSpot campaign as assets.
-4. **Salesforce campaign** – Creates the campaign with Type, Status, Description; your sync workflow can add Campaign Members from HubSpot list data.
-5. **Workflows** – Optionally calls a Zapier webhook (or similar) with the new campaign IDs so your Zaps can turn on or run (e.g. “when campaign created, sync list to SF campaign members”).
+This project provides two main workflows:
 
-## Setup
+1. **Campaign Form Automation** - Automates campaign creation from HubSpot landing page forms
+2. **List Upload Automation** - Uploads CSV contacts to HubSpot segments
 
-### 1. Install dependencies
+Both workflows integrate with HubSpot and Salesforce to streamline campaign management.
+
+## Quick Start
+
+### 1. Install Dependencies
 
 ```bash
-cd /Users/chris/Documents/campaign-automation
 python -m venv .venv
-source .venv/bin/activate   # or .venv\Scripts\activate on Windows
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
-### 2. Environment variables
+### 2. Configure Environment
 
 Copy `.env.example` to `.env` and fill in:
 
-- **HubSpot**: Create a [Private App](https://developers.hubspot.com/docs/api/private-apps) with scopes `marketing.campaigns.read` and `marketing.campaigns.write`. Put the access token in `HUBSPOT_ACCESS_TOKEN`.
-- **Salesforce**: Use a Connected App or username/password + security token. Set `SALESFORCE_USERNAME`, `SALESFORCE_PASSWORD`, `SALESFORCE_SECURITY_TOKEN`.
-- **Zapier (optional)**: Set `ZAPIER_CAMPAIGN_CREATED_WEBHOOK` to the webhook URL that should run when a campaign is created (e.g. a Zap trigger).
+**Required:**
+- `HUBSPOT_ACCESS_TOKEN` - HubSpot Private App token
+- `SALESFORCE_USERNAME` - Salesforce username
+- `SALESFORCE_PASSWORD` - Salesforce password
+- `SALESFORCE_SECURITY_TOKEN` - Salesforce security token (if needed)
 
-### 3. Get HubSpot list IDs
+**Optional:**
+- `ZAPIER_CAMPAIGN_CREATED_WEBHOOK` - Zapier webhook URL for campaign creation events
 
-In HubSpot: **Marketing > Lead Management > Lists**. Open a list; the ID is in the URL (`.../list/12345678`) or use the [Lists API](https://developers.hubspot.com/docs/api/crm/lists) to list them. Put those IDs in `hubspot.list_ids` in your YAML.
+### 3. Set Up HubSpot Private App
 
-## Usage
+Create a [HubSpot Private App](https://developers.hubspot.com/docs/api/private-apps) with these scopes:
 
-1. Copy the example campaign and edit it:
+**For Campaign Form Automation:**
+- `marketing.campaigns.read`
+- `marketing.campaigns.write`
+- `crm.lists.read`
+- `crm.lists.write`
+- `automation.read` (optional, for workflow creation)
+- `automation.write` (optional, for workflow creation)
 
+**For List Upload:**
+- `crm.objects.contacts.read`
+- `crm.objects.contacts.write`
+- `crm.lists.read`
+- `crm.lists.write`
+
+## Workflows
+
+### Workflow 1: Campaign Form Automation
+
+Automates campaign creation in HubSpot and Salesforce from a HubSpot landing page form submission.
+
+**How it works:**
+1. User fills out form on HubSpot landing page
+2. JavaScript intercepts form submission
+3. Webhook sends data to backend server
+4. Backend creates campaigns in HubSpot and Salesforce
+5. User receives confirmation with campaign IDs
+
+**Setup:**
+- See `workflows/campaign-form/README.md` for detailed setup instructions
+- Copy `workflows/campaign-form/frontend/form-interceptor.js` to your HubSpot landing page
+- Deploy `workflows/campaign-form/backend/webhook_server.py` (or use `webhook_server.py` in root)
+
+**Usage:**
+- Form submission automatically triggers campaign creation
+- No manual steps required after initial setup
+
+### Workflow 2: List Upload Automation
+
+Uploads contacts from CSV files to HubSpot static segments (lists).
+
+**How it works:**
+1. Read CSV file with contact information
+2. Create or update contacts in HubSpot (batch processing)
+3. Find or create segment (static list) by name
+4. Add contacts to segment in batches
+5. Report results with summary statistics
+
+**Usage:**
+```bash
+# Upload to segment by name
+python workflows/list-upload/upload_contacts.py "attendees.csv" "Event Attendees - Registered"
+
+# Upload to segment by list ID
+python workflows/list-upload/upload_contacts.py "attendees.csv" --list-id 12345678
+```
+
+**Helper Scripts:**
+```bash
+# Find lists by pattern
+python workflows/list-upload/scripts/find_list_ids.py "Event"
+
+# List all HubSpot lists
+python workflows/list-upload/scripts/list_lists.py
+```
+
+**Setup:**
+- See `workflows/list-upload/README.md` for detailed instructions
+
+## Project Structure
+
+```
+campaign-automation/
+├── workflows/                  # Organized workflow scripts
+│   ├── campaign-form/          # Workflow 1: Form automation
+│   │   ├── frontend/
+│   │   │   └── form-interceptor.js
+│   │   ├── backend/
+│   │   │   └── webhook_server.py
+│   │   └── README.md
+│   └── list-upload/           # Workflow 2: List upload
+│       ├── upload_contacts.py
+│       ├── scripts/
+│       │   ├── find_list_ids.py
+│       │   └── list_lists.py
+│       └── README.md
+├── src/                        # Core shared logic
+│   ├── hubspot_client.py       # HubSpot API client
+│   ├── salesforce_client.py    # Salesforce API client
+│   └── run_campaign.py         # Campaign creation logic
+├── config/                     # Campaign configurations
+│   └── campaigns/
+│       └── example-campaign.yaml
+├── archive/                    # Archived files (reference only)
+├── webhook_server.py           # Webhook server (backward compatibility)
+├── requirements.txt           # Python dependencies
+├── Procfile                   # Railway deployment config
+├── runtime.txt                # Python version
+└── README.md                  # This file
+```
+
+## Manual Campaign Creation (YAML)
+
+You can also create campaigns manually using YAML configs:
+
+1. Copy example campaign:
    ```bash
    cp config/campaigns/example-campaign.yaml config/campaigns/my-campaign.yaml
    ```
 
-2. Edit `my-campaign.yaml`:
-   - Set `name`, `start_date`, `end_date`.
-   - Set `taxonomy.hubspot` and `taxonomy.salesforce` to match your property/field names.
-   - Set `hubspot.list_ids` to the HubSpot list IDs to associate.
-   - Set `salesforce.status` and `description` as needed.
-   - Optionally set `workflows.zapier_webhook_url` (or use env `ZAPIER_CAMPAIGN_CREATED_WEBHOOK`).
+2. Edit `my-campaign.yaml` with your campaign details
 
-3. Run the automation:
-
+3. Run campaign creation:
    ```bash
    python -m src.run_campaign config/campaigns/my-campaign.yaml
    ```
 
-4. The script prints HubSpot campaign ID and Salesforce campaign ID. Use these in Zapier or HubSpot workflows to:
-   - Sync the HubSpot list to Salesforce Campaign Members.
-   - Turn on or trigger other workflows that move data between the two systems.
+## Deployment
 
-## Config reference
+### Railway Deployment
 
-| Section | Purpose |
-|--------|---------|
-| `name` | Campaign name (used in both HubSpot and Salesforce). |
-| `start_date` / `end_date` | YYYY-MM-DD; applied in HubSpot (and SF if you map them). |
-| `taxonomy.hubspot` | Key-value of HubSpot campaign property internal names. |
-| `taxonomy.salesforce` | Key-value of Salesforce Campaign field names (e.g. `Type`, `Region__c`). |
-| `tags` | List of tags; map to a HubSpot property via `hubspot.extra_properties` if needed. |
-| `hubspot.list_ids` | List of HubSpot list IDs to associate as OBJECT_LIST assets. |
-| `hubspot.extra_properties` | Any other HubSpot campaign properties (e.g. `hs_notes`, `hs_campaign_status`). |
-| `salesforce.status` | Campaign status (e.g. Planned, Active). |
-| `salesforce.description` | Campaign description. |
-| `workflows.zapier_webhook_url` | Webhook URL to call after creation (payload includes both campaign IDs). |
+The webhook server is configured for Railway deployment:
 
-## Turning on workflows (Zapier)
+1. Connect your GitHub repository to Railway
+2. Railway will detect `Procfile` and deploy automatically
+3. Set environment variables in Railway dashboard
+4. Update `WEBHOOK_URL` in `form-interceptor.js` with your Railway URL
 
-- **Webhook trigger**: Create a Zap with trigger “Webhooks by Zapier > Catch Hook”. Use that URL as `ZAPIER_CAMPAIGN_CREATED_WEBHOOK` or in `workflows.zapier_webhook_url`. The payload will include `hubspot_campaign_id`, `salesforce_campaign_id`, and `campaign_name` so the Zap can add members or enable other Zaps.
-- **Campaign members in Salesforce**: In the Zap, add a step that uses the HubSpot list (or “Contacts in list”) and creates Campaign Members in Salesforce for the created `salesforce_campaign_id`.
+**Note:** `webhook_server.py` in root is kept for backward compatibility. The production version is in `workflows/campaign-form/backend/webhook_server.py`.
 
-## Project layout
+## Configuration Reference
 
+### Campaign YAML Structure
+
+```yaml
+name: "Campaign Name"
+start_date: "2025-01-01"
+end_date: "2025-01-31"
+taxonomy:
+  hubspot:
+    channel: "Webinar"
+  salesforce:
+    Type: "Webinar"
+hubspot:
+  auto_create_segments: ["Registered", "Attended"]
+  create_workflows: true
+salesforce:
+  status: "Planned"
+  description: "Campaign description"
+workflows:
+  zapier_webhook_url: "https://hooks.zapier.com/..."
 ```
-campaign-automation/
-├── config/campaigns/     # One YAML per campaign
-├── src/
-│   ├── hubspot_client.py
-│   ├── salesforce_client.py
-│   └── run_campaign.py
-├── .env.example
-├── requirements.txt
-└── README.md
-```
+
+## Troubleshooting
+
+### Common Issues
+
+**"HUBSPOT_ACCESS_TOKEN required"**
+- Set token in `.env` file or environment variables
+- Verify token has required scopes
+
+**"Form not detected"**
+- Check browser console for detection attempts
+- Verify form selectors match your HubSpot form structure
+
+**"List ID not found"**
+- Use `list_lists.py` to find correct list ID
+- Or use `find_list_ids.py` to search by pattern
+
+**Webhook errors**
+- Check Railway deployment logs
+- Verify `WEBHOOK_URL` is correct in JavaScript
+- Ensure environment variables are set in Railway
+
+### Getting Help
+
+- Check workflow-specific READMEs:
+  - `workflows/campaign-form/README.md`
+  - `workflows/list-upload/README.md`
+- Review archived documentation in `archive/docs/` if needed
+- Check HubSpot and Salesforce API documentation
+
+## Contributing
+
+When adding new workflows:
+1. Create new directory under `workflows/`
+2. Include README.md with setup and usage instructions
+3. Use consistent naming conventions
+4. Update this README with workflow overview
+
+## License
+
+Internal use only - Fireworks Marketing Operations
