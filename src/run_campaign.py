@@ -176,6 +176,9 @@ def run(config_path: Union[str, Path]) -> dict:
     created_workflows = []
     if create_workflows and member_statuses and salesforce_id:
         print(f"\nCreating HubSpot workflows to sync list enrollments to Salesforce...")
+        print(f"  List status map: {list_status_map}")
+        print(f"  Created list IDs: {created_list_ids}")
+        
         for status in member_statuses:
             # Find the list ID for this status
             list_id = None
@@ -187,8 +190,21 @@ def run(config_path: Union[str, Path]) -> dict:
                     list_id = lid
                     break
             
-            # If not found, try to find it from manual list_ids
-            # (Note: This assumes manual list_ids are in same order as member_statuses)
+            # If not found, try to find it by searching for the list by name
+            if not list_id:
+                print(f"  🔍 List ID not in map, searching for list: '{list_name}'")
+                list_id = hs.find_list_by_name(list_name)
+                if list_id:
+                    print(f"  ✓ Found list '{list_name}' (id={list_id})")
+                    list_status_map[list_id] = status
+                else:
+                    # Try exact name search as fallback
+                    list_id = hs.find_list_by_exact_name(list_name)
+                    if list_id:
+                        print(f"  ✓ Found list '{list_name}' via exact search (id={list_id})")
+                        list_status_map[list_id] = status
+            
+            # If still not found, try to find it from manual list_ids
             if not list_id and manual_list_ids:
                 # Try to match by checking if we can find the list
                 # For now, we'll create workflow even if list_id is not found
@@ -198,6 +214,7 @@ def run(config_path: Union[str, Path]) -> dict:
             if list_id:
                 workflow_name = list_name  # Same name as segment
                 try:
+                    print(f"  🚀 Creating workflow '{workflow_name}' with list_id={list_id}, status={status}")
                     workflow = hs.create_workflow_with_enrollment(
                         workflow_name=workflow_name,
                         list_id=list_id,
@@ -213,9 +230,11 @@ def run(config_path: Union[str, Path]) -> dict:
                         "status": status,
                         "list_id": list_id,
                     })
-                    print(f"  Created workflow '{workflow_name}' (id={workflow.get('id')})")
+                    print(f"  ✅ Created workflow '{workflow_name}' (id={workflow.get('id')})")
                 except Exception as e:
-                    print(f"  ⚠️  Failed to create workflow for '{workflow_name}': {e}")
+                    print(f"  ❌ Failed to create workflow for '{workflow_name}': {e}")
+                    import traceback
+                    print(f"     Traceback: {traceback.format_exc()}")
                     print(f"     You may need to create this workflow manually in HubSpot UI")
             else:
                 print(f"  ⚠️  Skipped workflow creation for '{list_name}' (list ID not found)")
